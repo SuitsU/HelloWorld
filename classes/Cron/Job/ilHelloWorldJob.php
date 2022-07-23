@@ -1,30 +1,14 @@
 <?php declare(strict_types=1);
 
-/**
- * A simple Hello-World plugin...
- * @author Christian Pietras <christian.pietras@colin-kiegel.com>
- */
-class ilHelloWorldCron extends ilCronJob
+class ilHelloWorldJob extends ilCronJob
 {
-
-    private const PLUGIN_ID='hewo';
-
-    private const PLUGIN_NAME = 'Hello-World';
 
     /**
      * @inheritDoc
      */
     public function getId() : string
     {
-        return self::PLUGIN_ID;
-    }
-
-    /**
-     * @return string
-     */
-    public function getPluginName() : string
-    {
-        return self::PLUGIN_NAME;
+        return "HelloWorld Job";
     }
 
     /**
@@ -64,6 +48,7 @@ class ilHelloWorldCron extends ilCronJob
      */
     public function run() : ilCronJobResult
     {
+        $this->logger->info('[Hello World] Hello World.');
 
         $result = new ilCronJobResult();
         $result->setStatus(ilCronJobResult::STATUS_OK);
