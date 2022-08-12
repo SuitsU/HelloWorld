@@ -3,26 +3,36 @@
 class ilHelloWorldPlugin extends ilCronHookPlugin
 {
 
+    private const PLUGIN_CLASS_NAME = ilHelloWorldPlugin::class;
     private const PLUGIN_ID = 'hewo';
-    private const PLUGIN_NAME = 'Hello World';
+    private const PLUGIN_NAME = 'HelloWorld';
 
+    /** Instance of this class
+     * @var self|null
+     */
+    protected static $instance = null;
 
-    public function getCronJobInstances()
+    /**
+     * @inheritDoc
+     */
+    public function getId() : string
     {
-        return [
-            $this->loadJobInstance(ilHelloWorldJob::class),
-        ];
+        return self::PLUGIN_ID;
     }
 
-    public function getCronJobInstance($a_job_id)
-    {
-        switch ($a_job_id) {
-            case 0: // ilHelloWorldJob::JOB_ID:
-                return $this->loadJobInstance(ilHelloWorldJob::class);
 
-            default:
-                return $this->loadJobInstance(ilHelloWorldJob::class);
+    public function getCronJobInstances() : array
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
         }
+
+        return [self::$instance];
+    }
+
+    public function getCronJobInstance($a_job_id) : ilHelloWorldJob
+    {
+        return new ilHelloWorldJob();
     }
 
     /**

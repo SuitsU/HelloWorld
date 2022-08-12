@@ -11,7 +11,6 @@ class ilHelloWorldCron extends ilCronJob
 {
 
     private const PLUGIN_ID='hewo';
-
     private const PLUGIN_NAME = 'Hello-World';
 
     /**

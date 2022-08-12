@@ -8,7 +8,7 @@ class ilHelloWorldJob extends ilCronJob
      */
     public function getId() : string
     {
-        return "HelloWorld Job";
+        return "HelloWorldJob";
     }
 
     /**
@@ -48,8 +48,6 @@ class ilHelloWorldJob extends ilCronJob
      */
     public function run() : ilCronJobResult
     {
-        $this->logger->info('[Hello World] Hello World.');
-
         $result = new ilCronJobResult();
         $result->setStatus(ilCronJobResult::STATUS_OK);
         $result->setCode(200);
