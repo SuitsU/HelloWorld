@@ -52,6 +52,12 @@ class ilHelloWorldJob extends ilCronJob
         $result->setStatus(ilCronJobResult::STATUS_OK);
         $result->setCode(200);
         $result->setMessage('This is a test! Hello World.');
+
+        $logFile = fopen("../cron.log", "w") or die("Unable to open file!");
+        $txt = print_r($result, true);
+        fwrite($logFile, $txt);
+        fclose($logFile);
+
         return $result;
     }
 }
