@@ -23,11 +23,7 @@ class ilHelloWorldPlugin extends ilCronHookPlugin
 
     public function getCronJobInstances() : array
     {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
-
-        return [self::$instance];
+        return [new ilHelloWorldJob()];
     }
 
     public function getCronJobInstance($a_job_id) : ilHelloWorldJob
