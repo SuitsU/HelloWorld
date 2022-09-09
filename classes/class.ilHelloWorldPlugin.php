@@ -1,16 +1,33 @@
 <?php declare(strict_types=1);
 
+include 'Util/class.Utilities.php';
+
+/*spl_autoload_register(function ($class_name) {
+    include $class_name . '.php';
+});*/
+
 class ilHelloWorldPlugin extends ilCronHookPlugin
 {
 
-    private const PLUGIN_CLASS_NAME = ilHelloWorldPlugin::class;
-    private const PLUGIN_ID = 'hewo';
-    private const PLUGIN_NAME = 'HelloWorld';
+    public const PLUGIN_CLASS_NAME = ilHelloWorldPlugin::class;
+    public const PLUGIN_ID = 'hewo';
+    public const PLUGIN_NAME = 'HelloWorld';
 
     /** Instance of this class
      * @var self|null
      */
     protected static $instance = null;
+
+    /**
+     * @return ilHelloWorldPlugin|null
+     */
+    public static function getInstance() : ?ilHelloWorldPlugin
+    {
+        if(self::$instance)
+            return self::$instance;
+
+        return new ilHelloWorldPlugin();
+    }
 
     /**
      * @inheritDoc
