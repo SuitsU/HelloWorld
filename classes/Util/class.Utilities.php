@@ -19,7 +19,14 @@ class Utilities
         return $randomString;
     }
 
-    public static function log(String $message, String $level='info') {
+    public static function log($message, String $level='info') {
+        if (gettype($message) == 'array') {
+            $message = json_encode($message, JSON_PRETTY_PRINT);
+        }
+        if (gettype($message) == 'boolean') {
+            $message = (($message)? 'true':'false');
+        }
+
         self::init();
         $log_path = self::$plugin_path.'/logs/';
 
