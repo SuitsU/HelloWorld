@@ -2,6 +2,15 @@
 
 class ilHelloWorldJob extends ilCronJob
 {
+    /**
+     * @var ilSetting
+     */
+    protected $settings;
+
+    public function __construct()
+    {
+        $this->settings = new ilSetting('helloworld');
+    }
 
     /**
      * @inheritDoc
@@ -51,6 +60,58 @@ class ilHelloWorldJob extends ilCronJob
     public function getDefaultScheduleValue() : int
     {
         return 2;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasCustomSettings()
+    {
+        return true;
+    }
+
+    /**
+     * @param ilPropertyFormGUI $a_form
+     */
+    public function addCustomSettingsToForm(ilPropertyFormGUI $a_form)
+    {
+        $test = new ilNumberInputGUI('Test', 'test');
+        $test->setSize(5);
+        $test->setSuffix('Unit');
+        $test->setRequired(true);
+        $test->allowDecimals(false);
+        $test->setMinValue(1);
+        $test->setInfo('Info');
+        $test->setValue($this->settings->get('test', 30));
+
+        // Array Key ist Select Value
+        $options = [
+            'exact' => 'Streng',
+            'minor' => 'Mittel',
+            'mayor' => 'Schwach',
+        ];
+
+        $test2 = new ilSelectInputGUI(
+            'Überprüfung',
+            "level"
+        );
+        $test2->setOptions($options);
+        $test2->setInfo('Wie streng soll das Plugin die Ilias Version überprüfen?');
+        $test2->setValue($this->settings->get('level', 'minor'));
+
+        $a_form->addItem($test2);
+        $a_form->addItem($test);
+    }
+
+    /**
+     * @param ilPropertyFormGUI $a_form
+     * @return bool
+     */
+    public function saveCustomSettings(ilPropertyFormGUI $a_form)
+    {
+        $this->settings->set('test', $a_form->getInput('test'));
+        $this->settings->set('level', $a_form->getInput('level'));
+        return true;
     }
 
     public function updateNotification(int $id, String $message_text, String $title = null) : void
@@ -171,14 +232,14 @@ class ilHelloWorldJob extends ilCronJob
         }
 
         // maybe get settings from another plugin table => plugin helloworldsettings => how to input settings
-        if ($ilDB->tableExists('rep_robj_xhew_data')) {
+        /*if ($ilDB->tableExists('rep_robj_xhew_data')) {
             $set = $ilDB->query("SELECT `name` as settings FROM `rep_robj_xhew_data` WHERE 1 LIMIT 1;"); // WHERE username=...
             $records = $ilDB->fetchAssoc($set);
             $settings = $records['settings'];
             HelloWorldUtilities::log(compact('settings'));
             //$settings = base64_decode($settings);
             //$settings = json_decode($settings);
-        }
+        }*/
 
         // $version = ILIAS_VERSION;
         $version_numeric = ILIAS_VERSION_NUMERIC;
