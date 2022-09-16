@@ -1,6 +1,8 @@
 <?php declare(strict_types=1);
 
-include 'Util/class.Utilities.php';
+include 'Util/class.HelloWorldUtilities.php';
+
+require_once __DIR__ . '/../vendor/autoload.php';
 
 /*spl_autoload_register(function ($class_name) {
     include $class_name . '.php';

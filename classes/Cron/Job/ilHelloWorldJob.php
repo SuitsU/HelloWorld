@@ -56,11 +56,11 @@ class ilHelloWorldJob extends ilCronJob
     public function updateNotification(int $id, String $message_text, String $title = null) : void
     {
         global $ilDB;
-        if ($title == null) $title = 'Title #'.Utilities::generateRandomString(5).' for day: '.date('d.m.Y', strtotime('now'));
+        if ($title == null) $title = 'Title #'.HelloWorldUtilities::generateRandomString(5).' for day: '.date('d.m.Y', strtotime('now'));
 
         $ilDB->manipulate("UPDATE il_adn_notifications ".
             " SET
-                    `title` = ".$ilDB->quote($title, "integer").",
+                    `title` = ".$ilDB->quote('Update Notification: '.$title, "integer").",
                     `body` = ".$ilDB->quote($message_text, "text").",
                     `active` = 1,
                     `event_start` = ".$ilDB->quote(strtotime('now'), "text").",
@@ -78,7 +78,7 @@ class ilHelloWorldJob extends ilCronJob
     public function createNotification(int $id, String $message_text, String $title = null) : void
     {
         global $ilDB;
-        if ($title == null) $title = 'Title #'.Utilities::generateRandomString(5).' for day: '.date('d.m.Y', strtotime('now'));
+        if ($title == null) $title = 'Title #'.HelloWorldUtilities::generateRandomString(5).' for day: '.date('d.m.Y', strtotime('now'));
 
         $ilDB->manipulate("INSERT INTO il_adn_notifications ".
             "(
@@ -108,7 +108,7 @@ class ilHelloWorldJob extends ilCronJob
                     `last_update`
                 ) VALUES (".
             $ilDB->quote($id, "integer").",".
-            $ilDB->quote($title, "text").",".
+            $ilDB->quote('Update Notification: '.$title, "text").",".
             $ilDB->quote($message_text . '... <a href="#">[read more here]</a>', "text").",".
             $ilDB->quote(3, "integer").",". #`type`,
             # 3,0,1,"[0,13,6]",,6,,1,"[""2""]",1,0,"",0,_top,1654960131,1654960131,1654960131,1654960131,1654960131,1654960131
@@ -150,30 +150,32 @@ class ilHelloWorldJob extends ilCronJob
         $result->setStatus(ilCronJobResult::STATUS_OK);
         $result->setCode(200);
 
-        $set = $ilDB->query("SELECT count(`id`) as `entity_amount`, max(`id`) as `highest_id`, max(`create_date`) as `newest_date` FROM il_adn_notifications WHERE 1;");
+        $set = $ilDB->query("SELECT count(`id`) as `entity_amount`, max(`id`) as `highest_id`, max(`create_date`) as `newest_date` FROM il_adn_notifications WHERE `title` LIKE '%Update Notification%';");
         $records = $ilDB->fetchAssoc($set);
-        $ids = $records['entity_amount'];
-        $highest_id = $records['highest_id'];
-        $newest_date = intval($records['newest_date']);
+        if(!empty($records)) {
+            $ids = $records['entity_amount'];
+            $highest_id = $records['highest_id'];
+            $newest_date = intval($records['newest_date']);
 
-        if(gettype($highest_id) != 'integer'){
-            $highest_id = intval($highest_id);
+            if(gettype($highest_id) != 'integer'){
+                $highest_id = intval($highest_id);
+            }
+
+            HelloWorldUtilities::log(compact('highest_id','newest_date','ids'));
+
+            HelloWorldUtilities::log('newest date: '. date('Y-m-d',$newest_date));
+            HelloWorldUtilities::log('date: '. date('Y-m-d',strtotime('now')));
+            $date1 = date('Y-m-d',$newest_date); // new DateTime(date('Y-m-d',$newest_date));
+            $date2 = date('Y-m-d',strtotime('now')); // new DateTime(date('Y-m-d',strtotime('now')));
+            HelloWorldUtilities::log('compare date: '. (($date1 == $date2)?'same':'not same'));
         }
-
-        Utilities::log(compact('highest_id','newest_date','ids'));
-
-        Utilities::log('newest date: '. date('Y-m-d',$newest_date));
-        Utilities::log('date: '. date('Y-m-d',strtotime('now')));
-        $date1 = date('Y-m-d',$newest_date); // new DateTime(date('Y-m-d',$newest_date));
-        $date2 = date('Y-m-d',strtotime('now')); // new DateTime(date('Y-m-d',strtotime('now')));
-        Utilities::log('compare date: '. (($date1 == $date2)?'same':'not same'));
 
         // maybe get settings from another plugin table => plugin helloworldsettings => how to input settings
         if ($ilDB->tableExists('rep_robj_xhew_data')) {
             $set = $ilDB->query("SELECT `name` as settings FROM `rep_robj_xhew_data` WHERE 1 LIMIT 1;"); // WHERE username=...
             $records = $ilDB->fetchAssoc($set);
             $settings = $records['settings'];
-            Utilities::log(compact('settings'));
+            HelloWorldUtilities::log(compact('settings'));
             //$settings = base64_decode($settings);
             //$settings = json_decode($settings);
         }
@@ -186,26 +188,30 @@ class ilHelloWorldJob extends ilCronJob
         $mayor = intval(explode(ILIAS_VERSION_NUMERIC, '.')[0]);
         $minor = intval(explode(ILIAS_VERSION_NUMERIC, '.')[1]);
 
+
+        $content = "";
         while ($content !== false){
+            //$html = file_get_contents('https://docu.ilias.de/goto_docu_root_1.html');
+            $ch = curl_init();
 
+            $url = 'https://github.com/ILIAS-eLearning/ILIAS/releases/tag/v'.$mayor.'.'.$minor;
+            HelloWorldUtilities::log($url);
 
+            curl_setopt($ch, CURLOPT_URL, $url); // https://github.com/ILIAS-eLearning/ILIAS/releases/tag/v7.13 < try 7.14 und 8.0 und nehme das höchste das einen content zurück gibt.
 
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_FRESH_CONNECT, TRUE);
+            curl_setopt($ch, CURLOPT_TIMEOUT, '3');
+            $content = curl_exec($ch);
+            curl_close($ch);
+
+            HelloWorldUtilities::log(( ($content)?'not empty':'empty' ));
+
+            if($content === false) continue;
+            else $minor++;
         }
 
-        //$html = file_get_contents('https://docu.ilias.de/goto_docu_root_1.html');
-        $ch = curl_init();
-
-        curl_setopt($ch, CURLOPT_URL, 'https://github.com/ILIAS-eLearning/ILIAS/releases'); // https://github.com/ILIAS-eLearning/ILIAS/releases/tag/v7.13 < try 7.14 und 8.0 und nehme das höchste das einen content zurück gibt.
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_FRESH_CONNECT, TRUE);
-        curl_setopt($ch, CURLOPT_TIMEOUT, '3');
-        $content = curl_exec($ch);
-        curl_close($ch);
-
-        // Utilities::log(( ($content)?$content:'empty' ));
-
-
+        $newest_version_numeric = "$mayor.$minor";
 
         //if($settings->preferences->notify_on_difference == 'exact') //compare version
         //if($settings->preferences->notify_on_difference == 'minor') //compare version numeric
@@ -225,7 +231,17 @@ class ilHelloWorldJob extends ilCronJob
                     //$this->createNotification(($highest_id+1),$lipsum->words(15));
 
                     //if($settings->preferences->insistent == 'low') every day update
-                    $this->updateNotification($highest_id, "Ihre Version $version ist nicht aktuell! Die aktuelle Version ist: $newest_version");
+                    if(!empty($records)) {
+                        $this->updateNotification($highest_id, "Ihre Version $version_numeric ist nicht aktuell! Die aktuelle Version ist: $newest_version_numeric");
+                    }
+                    else {
+                        $set = $ilDB->query("SELECT max(`id`) as `highest_id` FROM il_adn_notifications WHERE 1;");
+                        $records = $ilDB->fetchAssoc($set);
+                        $highest_id = intval($records["highest_id"]);
+
+                        $this->createNotification(($highest_id + 1), "Ihre Version $version_numeric ist nicht aktuell! Die aktuelle Version ist: $newest_version_numeric");
+                    }
+
 
                 } // table exists
             } // date1 = date2

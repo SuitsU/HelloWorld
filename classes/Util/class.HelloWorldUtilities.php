@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-class Utilities
+class HelloWorldUtilities
 {
     # /var/www/dev7/ilias/Customizing/global/plugins/Services/Cron/CronHook/HelloWorld/classes/Util/info.log
     static $plugin_path;
