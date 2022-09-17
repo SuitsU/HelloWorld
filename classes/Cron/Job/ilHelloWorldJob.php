@@ -199,6 +199,7 @@ class ilHelloWorldJob extends ilCronJob
 
     /**
      * @inheritDoc
+     * @throws Exception
      */
     public function run() : ilCronJobResult
     {
@@ -222,13 +223,13 @@ class ilHelloWorldJob extends ilCronJob
                 $highest_id = intval($highest_id);
             }
 
-            HelloWorldUtilities::log(compact('highest_id','newest_date','ids'));
+            self::log(compact('highest_id','newest_date','ids'));
 
-            HelloWorldUtilities::log('newest date: '. date('Y-m-d',$newest_date));
-            HelloWorldUtilities::log('date: '. date('Y-m-d',strtotime('now')));
+            self::log('newest date: '. date('Y-m-d',$newest_date));
+            self::log('date: '. date('Y-m-d',strtotime('now')));
             $date1 = date('Y-m-d',$newest_date); // new DateTime(date('Y-m-d',$newest_date));
             $date2 = date('Y-m-d',strtotime('now')); // new DateTime(date('Y-m-d',strtotime('now')));
-            HelloWorldUtilities::log('compare date: '. (($date1 == $date2)?'same':'not same'));
+            self::log('compare date: '. (($date1 == $date2)?'same':'not same'));
         }
 
         // maybe get settings from another plugin table => plugin helloworldsettings => how to input settings
@@ -236,27 +237,38 @@ class ilHelloWorldJob extends ilCronJob
             $set = $ilDB->query("SELECT `name` as settings FROM `rep_robj_xhew_data` WHERE 1 LIMIT 1;"); // WHERE username=...
             $records = $ilDB->fetchAssoc($set);
             $settings = $records['settings'];
-            HelloWorldUtilities::log(compact('settings'));
+            self::log(compact('settings'));
             //$settings = base64_decode($settings);
             //$settings = json_decode($settings);
         }*/
 
+
         // $version = ILIAS_VERSION;
-        $version_numeric = ILIAS_VERSION_NUMERIC;
+        $version_numeric = strval(ILIAS_VERSION_NUMERIC);
 
         // $newest_version = '7.13 2022-08-31';
-        $newest_version_numeric = ILIAS_VERSION_NUMERIC;
-        $mayor = intval(explode(ILIAS_VERSION_NUMERIC, '.')[0]);
-        $minor = intval(explode(ILIAS_VERSION_NUMERIC, '.')[1]);
+        $newest_version_numeric = strval(ILIAS_VERSION_NUMERIC);
 
+        $mayor = intval(explode('.',$newest_version_numeric)[0]);
+        $minor = intval(explode('.',$newest_version_numeric)[1]);
 
-        $content = "";
-        while ($content !== false){
+        self::log(compact(
+            'version_numeric',
+            'newest_version_numeric',
+            'mayor',
+            'minor'
+        ));
+
+        if($mayor <= 0) {
+            throw new \Exception("Mayor version cannot be 0 or lower!");
+        }
+
+        for ($i = 0; $i <= 10; $i++) {
             //$html = file_get_contents('https://docu.ilias.de/goto_docu_root_1.html');
             $ch = curl_init();
 
             $url = 'https://github.com/ILIAS-eLearning/ILIAS/releases/tag/v'.$mayor.'.'.$minor;
-            HelloWorldUtilities::log($url);
+            self::log($url);
 
             curl_setopt($ch, CURLOPT_URL, $url); // https://github.com/ILIAS-eLearning/ILIAS/releases/tag/v7.13 < try 7.14 und 8.0 und nehme das höchste das einen content zurück gibt.
 
@@ -264,43 +276,90 @@ class ilHelloWorldJob extends ilCronJob
             curl_setopt($ch, CURLOPT_FRESH_CONNECT, TRUE);
             curl_setopt($ch, CURLOPT_TIMEOUT, '3');
             $content = curl_exec($ch);
+            $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
 
-            HelloWorldUtilities::log(( ($content)?'not empty':'empty' ));
+            self::log([
+                "content" => ( ($content)?'not empty':'empty' ),
+                "status_code" => $status_code,
+            ]);
 
-            if($content === false) continue;
+            if($status_code === 404) {
+                $minor = $minor - 1;
+                break;
+            }
+            if($content === false OR empty($content)) {
+                $minor = $minor - 1;
+                break;
+            }
+
             else $minor++;
         }
 
         $newest_version_numeric = "$mayor.$minor";
 
-        //if($settings->preferences->notify_on_difference == 'exact') //compare version
-        //if($settings->preferences->notify_on_difference == 'minor') //compare version numeric
-        //if($settings->preferences->notify_on_difference == 'mayor') //compare version explode on '.' first index
+        /*
+         * can be 'mayor' 'minor' 'exact'
+         */
+        $notification_level = $this->settings->get('level', 'minor');
+
+        /*
+         * can be 'high' 'middle' 'low'
+         */
+        $insistence_level = $this->settings->get('insistence', 'low');
+
+        self::log(compact(
+            'version_numeric',
+            'newest_version_numeric',
+            'notification_level',
+            'insistence_level'
+        ));
 
         //minor
         if ($version_numeric != $newest_version_numeric) {
+
+            self::log('$version_numeric != $newest_version_numeric');
+
             if(($date1 != $date2)) {
+
+                self::log('$date1 != $date2');
+
                 $lipsum = new joshtronic\LoremIpsum();
+                $test = $lipsum->word(25);
+                self::log($test);
+
                 if ($ilDB->tableExists('il_adn_notifications')) {
+
+                    self::log('$ilDB->tableExists(\'il_adn_notifications\')');
 
                     // TODO FIND IN 'NOTIFICATION-CRONJOB-TABLE' ENTRY WITH VERSION NUMBER AND GET NOTIFICATION ID TO UPDATE
 
-                    //if($settings->preferences->insistent == 'high') maybe every day new and not dismissable
+                    //if($insistence_level == 'high') maybe every day new and not dismissable
 
-                    //if($settings->preferences->insistent == 'middle') every day new and dismissable
+                    //if($insistence_level == 'middle') every day new and dismissable
                     //$this->createNotification(($highest_id+1),$lipsum->words(15));
 
-                    //if($settings->preferences->insistent == 'low') every day update
-                    if(!empty($records)) {
-                        $this->updateNotification($highest_id, "Ihre Version $version_numeric ist nicht aktuell! Die aktuelle Version ist: $newest_version_numeric");
-                    }
-                    else {
-                        $set = $ilDB->query("SELECT max(`id`) as `highest_id` FROM il_adn_notifications WHERE 1;");
-                        $records = $ilDB->fetchAssoc($set);
-                        $highest_id = intval($records["highest_id"]);
+                    if($insistence_level == 'low') { // every day update
 
-                        $this->createNotification(($highest_id + 1), "Ihre Version $version_numeric ist nicht aktuell! Die aktuelle Version ist: $newest_version_numeric");
+                        self::log('$insistence_level == \'low\'');
+
+                        if (!empty($records)) {
+
+                            self::log('update notification');
+
+                            $this->updateNotification($highest_id,
+                                "Ihre Version $version_numeric ist nicht aktuell! Die aktuelle Version ist: $newest_version_numeric");
+                        } else {
+
+                            self::log('create notification');
+
+                            $set = $ilDB->query("SELECT max(`id`) as `highest_id` FROM il_adn_notifications WHERE 1;");
+                            $records = $ilDB->fetchAssoc($set);
+                            $highest_id = intval($records["highest_id"]);
+
+                            $this->createNotification(($highest_id + 1),
+                                "Ihre Version $version_numeric ist nicht aktuell! Die aktuelle Version ist: $newest_version_numeric");
+                        }
                     }
 
 
@@ -311,6 +370,17 @@ class ilHelloWorldJob extends ilCronJob
         $result->setMessage('Hello World.');
 
         return $result;
+    }
+
+    /**
+     * @param        $message
+     * @param String $level
+     * @return void
+     * @throws HelloWorldException
+     */
+    static function log($message, String $level='debug') : void
+    {
+        HelloWorldUtilities::log($message, $level);
     }
 
 }
