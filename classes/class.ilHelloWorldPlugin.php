@@ -1,4 +1,6 @@
-<?php declare(strict_types=1);
+<?php
+
+declare(strict_types=1);
 
 include 'Util/class.HelloWorldUtilities.php';
 
@@ -10,7 +12,6 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 class ilHelloWorldPlugin extends ilCronHookPlugin
 {
-
     public const PLUGIN_CLASS_NAME = ilHelloWorldPlugin::class;
     public const PLUGIN_ID = 'hewo';
     public const PLUGIN_NAME = 'HelloWorld';
@@ -23,10 +24,11 @@ class ilHelloWorldPlugin extends ilCronHookPlugin
     /**
      * @return ilHelloWorldPlugin|null
      */
-    public static function getInstance() : ?ilHelloWorldPlugin
+    public static function getInstance(): ?ilHelloWorldPlugin
     {
-        if(self::$instance)
+        if (self::$instance) {
             return self::$instance;
+        }
 
         return new ilHelloWorldPlugin();
     }
@@ -34,18 +36,18 @@ class ilHelloWorldPlugin extends ilCronHookPlugin
     /**
      * @inheritDoc
      */
-    public function getId() : string
+    public function getId(): string
     {
         return self::PLUGIN_ID;
     }
 
 
-    public function getCronJobInstances() : array
+    public function getCronJobInstances(): array
     {
         return [new ilHelloWorldJob()];
     }
 
-    public function getCronJobInstance($a_job_id) : ilHelloWorldJob
+    public function getCronJobInstance($a_job_id): ilHelloWorldJob
     {
         return new ilHelloWorldJob();
     }
@@ -53,7 +55,7 @@ class ilHelloWorldPlugin extends ilCronHookPlugin
     /**
      * @inheritDoc
      */
-    public function getPluginName() : string
+    public function getPluginName(): string
     {
         return self::PLUGIN_NAME;
     }
