@@ -1,1 +1,1 @@
-# Testprojekt Versionscheck
+# Dies ist nur ein Spielprojekt!
